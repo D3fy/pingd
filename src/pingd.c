@@ -1,4 +1,4 @@
-#include pingd.h
+#include "pingd.h"
 
 
 unsigned short checksum(void *b, int len) /* {{{ */
@@ -18,16 +18,24 @@ unsigned short checksum(void *b, int len) /* {{{ */
 }
 /* }}} */
 
-void display(void *buf, int bytes) /* {{{ */
+void display(void *buf, int bytes, int pid) /* {{{ */
 {
 	struct iphdr   *ip   = buf;
 	struct icmphdr *icmp = buf + ip->ihl * 4;
 
 	printf("\n--- data start ---\n");
 	int hdr_size = sizeof(struct iphdr) + sizeof(struct icmphdr);
+	unsigned long org, rcv, snd;
+	memcpy(&org, ((char *)buf) + hdr_size, 4);
+	memcpy(&rcv, ((char *)buf) + hdr_size + 4, 4);
+	memcpy(&snd, ((char *)buf) + hdr_size + 8, 4);
+	org = ntohl(org);
+	rcv = ntohl(rcv);
+	snd = ntohl(snd);
+	printf("org: %lu, rcv: %lu, snd: %lu\n", org, rcv, snd);
 	for (int i = hdr_size; i < bytes - hdr_size; i++)
 		printf("%c", ((char*)buf)[i] - '0');
-	printf("\n--- data finished ---\n");
+	printf("--- data finished ---\n");
 
 	printf("\nIPv%d: hdr-size=%d pkt-size=%d protocol=%d TTL=%d src=%s ",
 		ip->version, ip->ihl*4, ntohs(ip->tot_len), ip->protocol,
@@ -44,7 +52,7 @@ void display(void *buf, int bytes) /* {{{ */
 }
 /* }}} */
 
-void listener(void) /* {{{ */
+void listener(int pid, struct protoent *proto) /* {{{ */
 {
 	int sd;
 	struct sockaddr_in addr;
@@ -61,7 +69,7 @@ void listener(void) /* {{{ */
 		memset(buf, 0, sizeof(buf));
 		bytes = recvfrom(sd, buf, sizeof(buf), 0, (struct sockaddr*) &addr, &len);
 		if (bytes > 0)
-			display(buf, bytes);
+			display(buf, bytes, pid);
 		else
 			perror("recvfrom");
 	}
@@ -69,10 +77,10 @@ void listener(void) /* {{{ */
 }
 /* }}} */
 
-void ping(struct sockaddr_in *addr) /* {{{ */
+void ping(struct sockaddr_in *addr, int pid, struct protoent *proto) /* {{{ */
 {
-	const int val  = 255;
-	int i, sd, cnt = 1;
+	const int val  = 5;
+	int sd, cnt = 0;
 	struct packet pckt;
 	struct sockaddr_in r_addr;
 
@@ -91,15 +99,14 @@ void ping(struct sockaddr_in *addr) /* {{{ */
 		if (recvfrom(sd, &pckt, sizeof(pckt), 0, (struct sockaddr*)&r_addr, &len) < 0 )
 			perror("failed recieve");
 		memset(&pckt, 0, sizeof(pckt));
-		pckt.hdr.type = ICMP_ECHO;
+		pckt.hdr.type = ICMP_TIMESTAMP;
 		pckt.hdr.un.echo.id = pid;
-		char *message = malloc(PACKETSIZE);
-		memset(message, 0, PACKETSIZE);
-		strncpy(message, "Hello Google", 13);
-		for (i = 0; i < PACKETSIZE - 1; i++)
-			pckt.msg[i] = message[i] + '0';
-		pckt.msg[PACKETSIZE - 1] = '\0';
-		pckt.msg[PACKETSIZE] = 0;
+		struct timeval t;
+		gettimeofday(&t, NULL);
+		unsigned long org = (t.tv_sec % 86400) * 1000 + t.tv_usec / 1000;
+		printf("send org: %lu\n", org);
+		org = htonl(org);
+		memcpy(pckt.msg, &org, 4);
 		pckt.hdr.un.echo.sequence = cnt++;
 		pckt.hdr.checksum = checksum(&pckt, sizeof(pckt));
 		if (sendto(sd, &pckt, sizeof(pckt), 0, (struct sockaddr*)addr, sizeof(*addr)) <= 0 )

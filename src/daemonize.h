@@ -16,8 +16,8 @@
   You should have received a copy of the GNU General Public License
   along with libvigor.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _SHITTY_DAEMON_H
-#define _SHITTY_DAEMON_H
+#ifndef _PINGD_DAEMON_H
+#define _PINGD_DAEMON_H
 
 #include <unistd.h>
 #include <string.h>

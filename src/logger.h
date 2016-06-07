@@ -16,8 +16,8 @@
   You should have received a copy of the GNU General Public License
   along with libvigor.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _SHITTY_LOG_H
-#define _SHITTY_LOG_H
+#ifndef _PINGD_LOG_H
+#define _PINGD_LOG_H
 
 #include <unistd.h>
 #include <string.h>
