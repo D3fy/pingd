@@ -18,7 +18,7 @@ unsigned short checksum(void *b, int len) /* {{{ */
 }
 /* }}} */
 
-void display(void *buf, int bytes, int pid) /* {{{ */
+void display(void *buf, int bytes, int pid, unsigned long ret) /* {{{ */
 {
 	struct iphdr   *ip   = buf;
 	struct icmphdr *icmp = buf + ip->ihl * 4;
@@ -32,7 +32,8 @@ void display(void *buf, int bytes, int pid) /* {{{ */
 	org = ntohl(org);
 	rcv = ntohl(rcv);
 	snd = ntohl(snd);
-	printf("org: %lu, rcv: %lu, snd: %lu\n", org, rcv, snd);
+	printf("org: %lu, rcv: %lu, snd: %lu, ret: %lu\n", org, rcv, snd, ret);
+	printf("tx: %lu ms, rx: %lu ms\n", rcv - org, ret - snd);
 	for (int i = hdr_size; i < bytes - hdr_size; i++)
 		printf("%c", ((char*)buf)[i] - '0');
 	printf("--- data finished ---\n");
@@ -57,6 +58,7 @@ void listener(int pid, struct protoent *proto) /* {{{ */
 	int sd;
 	struct sockaddr_in addr;
 	unsigned char buf[1024];
+	struct timeval t;
 
 	if ((sd = socket(PF_INET, SOCK_RAW, proto->p_proto)) < 0 ) {
 		perror("socket");
@@ -68,8 +70,10 @@ void listener(int pid, struct protoent *proto) /* {{{ */
 
 		memset(buf, 0, sizeof(buf));
 		bytes = recvfrom(sd, buf, sizeof(buf), 0, (struct sockaddr*) &addr, &len);
+		gettimeofday(&t, NULL);
+		unsigned long ret = (t.tv_sec % 86400) * 1000 + t.tv_usec / 1000;
 		if (bytes > 0)
-			display(buf, bytes, pid);
+			display(buf, bytes, pid, ret);
 		else
 			perror("recvfrom");
 	}

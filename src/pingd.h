@@ -29,7 +29,7 @@ struct packet
 
 unsigned short checksum(void *b, int len);
 
-void display(void *buf, int bytes, int pid);
+void display(void *buf, int bytes, int pid, unsigned long ret);
 
 void listener(int pid, struct protoent *proto);
 
