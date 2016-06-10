@@ -7,7 +7,7 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/time.h>
+#include <time.h>
 
 #include <fcntl.h>
 #include <errno.h>
@@ -24,15 +24,15 @@
 struct packet
 {
 	struct icmphdr hdr;
-	unsigned char msg[12];
+	unsigned char msg[64];
 };
 
 unsigned short checksum(void *b, int len);
 
-void display(void *buf, int bytes, int pid, unsigned long ret);
+void display(void *buf, int bytes, int pid, unsigned long long ret);
 
 void listener(int pid, struct protoent *proto);
 
-void ping(struct sockaddr_in *addr, int pid, struct protoent *proto);
+void ping(char * host, struct sockaddr_in *addr, int pid, struct protoent *proto);
 
 #endif

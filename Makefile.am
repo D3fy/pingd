@@ -21,7 +21,7 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I build
 
-AM_CFLAGS = -Wall -Wextra -g -pedantic $(DEPS_CFLAGS)
+AM_CFLAGS = -Wall -std=gnu99 -Wextra -g -pedantic $(DEPS_CFLAGS)
 
 core_headers :=
 #core_headers += src/config/config_file.h
@@ -46,6 +46,7 @@ AM_YFLAGS = -d
 #	$(YACCCOMPILE) --output-file=$@ $<
 
 pingd_SOURCES = $(core_headers) src/main.c $(core_src)
+pingd_LDADD   = $(LDADD) -lrt
 sbin_PROGRAMS   = pingd
 
 dist_man_MANS  =

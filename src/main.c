@@ -26,7 +26,7 @@ int main (int argc, char *strings[])
 	if (fork() == 0)
 		listener(pid, proto);
 
-	ping(&addr, pid, proto);
+	ping(strings[1], &addr, pid, proto);
 
 	wait(0);
 	return 0;
