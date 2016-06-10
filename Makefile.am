@@ -21,19 +21,25 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I build
 
-AM_CFLAGS = -Wall -std=gnu99 -Wextra -g -pedantic $(DEPS_CFLAGS)
+AM_CFLAGS  =
+AM_CFLAGS += -Wall
+AM_CFLAGS += -Wextra
+AM_CFLAGS += -g
+AM_CFLAGS += -pedantic
+AM_CFLAGS += -std=gnu99
+AM_CFLAGS += $(DEPS_CFLAGS)
 
 core_headers :=
 #core_headers += src/config/config_file.h
-core_headers += src/logger.h
-core_headers += src/daemonize.h
+core_headers += src/util/logger.h
+core_headers += src/util/daemonize.h
 core_headers += src/pingd.h
 
 core_src :=
 #core_src += src/config/parse.y
 #core_src += src/config/scanner.l
-core_src += src/logger.c
-core_src += src/daemonize.c
+core_src += src/util/logger.c
+core_src += src/util/daemonize.c
 core_src += src/pingd.c
 
 AM_LFLAGS = --header-file --yylineno
