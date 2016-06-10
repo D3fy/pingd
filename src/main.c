@@ -2,11 +2,6 @@
 #include "util/logger.h"
 #include "util/daemonize.h"
 #include <sys/timerfd.h>
-#include <sys/epoll.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-#define MAX_EVENTS 1024
 
 int main (int argc, char *strings[])
 {
@@ -36,17 +31,16 @@ int main (int argc, char *strings[])
 	fcntl(fd, F_SETFL, O_NONBLOCK);
 	struct itimerspec it;
 	it.it_interval.tv_sec  = 0;
-	it.it_interval.tv_nsec = 5 * 100 * 1000 * 1000;
+	it.it_interval.tv_nsec = 2 * 100 * 1000 * 1000;
 	it.it_value.tv_sec     = 0;
-	it.it_value.tv_nsec    = 5 * 100 * 1000 * 1000;
+	it.it_value.tv_nsec    = 2 * 100 * 1000 * 1000;
 
 	struct epoll_event ev, events[MAX_EVENTS];
 	int nfds, epollfd;
 
 	ev.events = EPOLLIN| EPOLLET; 
 	uint64_t value;
-	//read(tfd, &value, 8);
-	// timerfd_settime(fd, TFD_TIMER_ABSTIME, &it, NULL);
+
 	if ((epollfd = epoll_create1(0)) == -1)
 		fprintf(stderr, "epoll_create1");
 	timerfd_settime(fd, 0, &it, NULL);
@@ -66,6 +60,5 @@ int main (int argc, char *strings[])
 		}
 	}
 
-	// wait(0);
 	return 0;
 }

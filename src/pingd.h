@@ -8,6 +8,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <sys/epoll.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <fcntl.h>
 #include <errno.h>
@@ -20,7 +23,10 @@
 #include <netinet/ip_icmp.h>
 
 
+#define MAX_EVENTS 1024
 #define PACKETSIZE 20
+
+
 struct packet
 {
 	struct icmphdr hdr;
