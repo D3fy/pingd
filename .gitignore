@@ -13,7 +13,10 @@ config.log
 config.status
 configure
 pingd
+src/*.o
 src/.deps/
 src/.dirstamp
-src/*.o
+src/util/*.o
+src/util/.deps/
+src/util/.dirstamp
 stamp-h1

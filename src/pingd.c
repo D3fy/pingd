@@ -33,12 +33,10 @@ void display(void *buf, int bytes, int pid, unsigned long long ret) /* {{{ */
 	for (int i = 0; i < 56; i++)
 		host[i] = host[i] - '0';
 	host[56 - 1] = '\0';
-	org_s = ntohl(org_s);
+	org_s  = ntohl(org_s);
 	org_ns = ntohl(org_ns);
 	printf("rtt: %llu us\n", ret - (org_s * 1000000 + org_ns / 1000));
 	printf("host: %s\n", host);
-	//for (int i = hdr_size; i < bytes - hdr_size; i++)
-	//	printf("%c", ((char*)buf)[i] - '0');
 	printf("--- data finished ---\n");
 
 	printf("\nIPv%d: hdr-size=%d pkt-size=%d protocol=%d TTL=%d src=%s ",
@@ -100,31 +98,33 @@ void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto)
 		perror("Set TTL option");
 	if (fcntl(sd, F_SETFL, O_NONBLOCK) != 0 )
 		perror("Request nonblocking I/O");
-	for (;;) {
-		unsigned int len = sizeof(r_addr);
 
-		printf("Msg #%d\n", cnt);
-		if (recvfrom(sd, &pckt, sizeof(pckt), 0, (struct sockaddr*)&r_addr, &len) < 0 )
-			perror("failed recieve");
-		memset(&pckt, 0, sizeof(pckt));
-		pckt.hdr.type = ICMP_ECHO;
-		pckt.hdr.un.echo.id = htons(pid);
-		unsigned char hst[56];
-		memcpy(hst, host, 56);
-		for (int i = 0; i < 56; i++)
-			hst[i] = hst[i] + '0';
-		struct timespec t;
-		clock_gettime(CLOCK_REALTIME, &t);
-		unsigned long org_s  = htonl(t.tv_sec);
-		unsigned long org_ns = htonl(t.tv_nsec);
-		memcpy(pckt.msg,     &org_s,  4);
-		memcpy(pckt.msg + 4, &org_ns, 4);
-		memcpy(pckt.msg + 8, hst, 56);
-		pckt.hdr.un.echo.sequence = htons(cnt++);
-		pckt.hdr.checksum = checksum(&pckt, sizeof(pckt));
-		if (sendto(sd, &pckt, sizeof(pckt), 0, (struct sockaddr*)addr, sizeof(*addr)) <= 0 )
-			perror("sendto");
-		sleep(1);
-	}
+	unsigned int len = sizeof(r_addr);
+
+	printf("Msg #%d\n", cnt);
+	if (recvfrom(sd, &pckt, sizeof(pckt), 0, (struct sockaddr*)&r_addr, &len) < 0 )
+		perror("failed recieve");
+
+	memset(&pckt, 0, sizeof(pckt));
+	pckt.hdr.type = ICMP_ECHO;
+	pckt.hdr.un.echo.id = htons(pid);
+
+	unsigned char hst[56];
+	memcpy(hst, host, 56);
+	for (int i = 0; i < 56; i++)
+		hst[i] = hst[i] + '0';
+	struct timespec t;
+	clock_gettime(CLOCK_REALTIME, &t);
+	unsigned long org_s  = htonl(t.tv_sec);
+	unsigned long org_ns = htonl(t.tv_nsec);
+	memcpy(pckt.msg,     &org_s,  4);
+	memcpy(pckt.msg + 4, &org_ns, 4);
+	memcpy(pckt.msg + 8, hst, 56);
+
+	pckt.hdr.un.echo.sequence = htons(cnt++);
+	pckt.hdr.checksum = checksum(&pckt, sizeof(pckt));
+
+	if (sendto(sd, &pckt, sizeof(pckt), 0, (struct sockaddr*)addr, sizeof(*addr)) <= 0 )
+		perror("sendto");
 }
 /* }}} */

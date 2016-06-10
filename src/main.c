@@ -1,6 +1,12 @@
 #include "pingd.h"
-#include "logger.h"
-#include "daemonize.h"
+#include "util/logger.h"
+#include "util/daemonize.h"
+#include <sys/timerfd.h>
+#include <sys/epoll.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#define MAX_EVENTS 1024
 
 int main (int argc, char *strings[])
 {
@@ -26,8 +32,40 @@ int main (int argc, char *strings[])
 	if (fork() == 0)
 		listener(pid, proto);
 
-	ping(strings[1], &addr, pid, proto);
+	int fd = timerfd_create(CLOCK_REALTIME, 0);
+	fcntl(fd, F_SETFL, O_NONBLOCK);
+	struct itimerspec it;
+	it.it_interval.tv_sec  = 0;
+	it.it_interval.tv_nsec = 5 * 100 * 1000 * 1000;
+	it.it_value.tv_sec     = 0;
+	it.it_value.tv_nsec    = 5 * 100 * 1000 * 1000;
 
-	wait(0);
+	struct epoll_event ev, events[MAX_EVENTS];
+	int nfds, epollfd;
+
+	ev.events = EPOLLIN| EPOLLET; 
+	uint64_t value;
+	//read(tfd, &value, 8);
+	// timerfd_settime(fd, TFD_TIMER_ABSTIME, &it, NULL);
+	if ((epollfd = epoll_create1(0)) == -1)
+		fprintf(stderr, "epoll_create1");
+	timerfd_settime(fd, 0, &it, NULL);
+	ev.data.fd = fd;
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev) == -1)
+		fprintf(stderr, "epoll_ctl sfd");
+
+	for (;;) {
+		if ((nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1)) == -1)
+			fprintf(stderr, "epoll_wait");
+
+		for (int n = 0; n < nfds; ++n) {
+			if (events[n].data.fd == fd) {
+				read(fd, &value, 8);
+				ping(strings[1], &addr, pid, proto);
+			}
+		}
+	}
+
+	// wait(0);
 	return 0;
 }
