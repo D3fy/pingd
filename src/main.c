@@ -54,7 +54,10 @@ int main (int argc, char *strings[])
 
 		for (int n = 0; n < nfds; ++n) {
 			if (events[n].data.fd == fd) {
-				read(fd, &value, 8);
+				if (read(fd, &value, 8) == -1) {
+					fprintf(stderr, "failed to read timer, %s\n", strerror(errno));
+					exit(1);
+				}
 				ping(strings[1], &addr, pid, proto);
 			}
 		}
