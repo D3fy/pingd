@@ -40,6 +40,6 @@ void display(void *buf, int pid, unsigned long long ret);
 
 void listener(int pid, struct protoent *proto);
 
-void ping(char * host, struct sockaddr_in *addr, int pid, struct protoent *proto, unsigned short seq);
+void ping(char * host, struct sockaddr_in *addr, int pid, struct protoent *proto, unsigned short seq, unsigned short hostid);
 
 #endif

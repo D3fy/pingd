@@ -67,7 +67,7 @@ int main (int argc, char *argv[])
 					exit(1);
 				}
 				for (int z = 1; z < argc; z++)
-					ping(argv[z], addr[z], pid, proto, seq[z]++);
+					ping(argv[z], addr[z], pid, proto, seq[z]++, (unsigned short) z);
 			}
 		}
 	}

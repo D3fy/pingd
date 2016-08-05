@@ -25,22 +25,33 @@ void display(void *buf, int pid, unsigned long long ret) /* {{{ */
 
 	int hdr_size = sizeof(struct iphdr) + sizeof(struct icmphdr);
 	unsigned long send_time_sec, send_time_nanosec;
-	memcpy(&send_time_sec, ((char *)buf) + hdr_size, 4);
-	memcpy(&send_time_nanosec, ((char *)buf) + hdr_size + 4, 4);
-	char host[56];
-	memcpy(host, ((char *)buf) + hdr_size + 8, 56);
-	for (int i = 0; i < 56; i++)
-		host[i] = host[i] - '0';
-	host[56 - 1]      = '\0';
+	char *name = malloc(6);
+	unsigned char ver;
+	unsigned short hostid;
+	memcpy(name,               ((char *)buf) + hdr_size,      5);
+	memcpy(&ver,               ((char *)buf) + hdr_size + 5,  1);
+	memcpy(&hostid,            ((char *)buf) + hdr_size + 6,  2);
+	memcpy(&send_time_sec,     ((char *)buf) + hdr_size + 8,  4);
+	memcpy(&send_time_nanosec, ((char *)buf) + hdr_size + 12, 4);
+	for (int i = 0; i < 5; i++)
+		name[i] = name[i] - '0';
+	name[5] = '\0';
+	hostid = ntohs(hostid);
+
+	if (strcmp(name, "PINGD") != 0) {
+		printf("invalid icmp echo pkt[%s]\n", name);
+		return;
+	}
 	send_time_sec     = ntohl(send_time_sec);
 	send_time_nanosec = ntohl(send_time_nanosec);
 	printf("rtt[%llu us]", ret - ((unsigned long long) send_time_sec * 1000000 + (unsigned long long) send_time_nanosec / 1000));
 	printf(" seq[%u]", ntohs(icmp->un.echo.sequence));
 	printf(" id[%d]",  ntohs(icmp->un.echo.id));
+	printf(" hostid[%u]", hostid);
 	printf(" src[%s]",
 		inet_ntoa(*((struct in_addr *)&((ip->saddr)))));
 	if (ntohs(icmp->un.echo.id) != pid)
-		printf(" FAILED PING");
+		printf(" FAILED PING [%u]", ntohs(icmp->un.echo.id));
 	printf("\n");
 }
 /* }}} */
@@ -90,7 +101,7 @@ void listener(int pid, struct protoent *proto) /* {{{ */
 }
 /* }}} */
 
-void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto, unsigned short cnt) /* {{{ */
+void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto, unsigned short cnt, unsigned short hostid) /* {{{ */
 {
 	const int ttl  = 61;
 	int sd;
@@ -112,17 +123,23 @@ void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto,
 	pckt.hdr.type = ICMP_ECHO;
 	pckt.hdr.un.echo.id = htons(pid);
 
-	unsigned char hst[56];
-	memcpy(hst, host, 56);
-	for (int i = 0; i < 56; i++)
-		hst[i] = hst[i] + '0';
 	struct timespec t;
 	clock_gettime(CLOCK_REALTIME, &t);
 	unsigned long org_s  = htonl(t.tv_sec);
 	unsigned long org_ns = htonl(t.tv_nsec);
-	memcpy(pckt.msg,     &org_s,  4);
-	memcpy(pckt.msg + 4, &org_ns, 4);
-	memcpy(pckt.msg + 8, hst, 56);
+	const unsigned char ver       = 1;
+	char *name = "PINGD";
+	unsigned char *header = malloc(5);
+	for (int i = 0; i < strlen(name); i++)
+		header[i] = name[i] + '0';
+
+	// unsigned short hostid = 0;
+	hostid = htons(hostid);
+	memcpy(pckt.msg,      header,  5);
+	memcpy(pckt.msg + 5,  &ver,    1);
+	memcpy(pckt.msg + 6,  &hostid, 2);
+	memcpy(pckt.msg + 8,  &org_s,  4);
+	memcpy(pckt.msg + 12, &org_ns, 4);
 
 	pckt.hdr.un.echo.sequence = htons(cnt);
 	pckt.hdr.checksum = checksum(&pckt, sizeof(pckt));
