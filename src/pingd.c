@@ -18,41 +18,29 @@ unsigned short checksum(void *b, int len) /* {{{ */
 }
 /* }}} */
 
-void display(void *buf, int bytes, int pid, unsigned long long ret) /* {{{ */
+void display(void *buf, int pid, unsigned long long ret) /* {{{ */
 {
 	struct iphdr   *ip   = buf;
 	struct icmphdr *icmp = buf + ip->ihl * 4;
 
-	// printf("\n--- data start ---\n");
 	int hdr_size = sizeof(struct iphdr) + sizeof(struct icmphdr);
-	unsigned long org_s, org_ns;
-	memcpy(&org_s, ((char *)buf) + hdr_size, 4);
-	memcpy(&org_ns, ((char *)buf) + hdr_size + 4, 4);
+	unsigned long send_time_sec, send_time_nanosec;
+	memcpy(&send_time_sec, ((char *)buf) + hdr_size, 4);
+	memcpy(&send_time_nanosec, ((char *)buf) + hdr_size + 4, 4);
 	char host[56];
 	memcpy(host, ((char *)buf) + hdr_size + 8, 56);
 	for (int i = 0; i < 56; i++)
 		host[i] = host[i] - '0';
-	host[56 - 1] = '\0';
-	org_s  = ntohl(org_s);
-	org_ns = ntohl(org_ns);
-	printf("rtt[%llu us]", ret - (org_s * 1000000 + org_ns / 1000));
-	//printf("host: %s\n", host);
-	//printf("--- data finished ---\n");
+	host[56 - 1]      = '\0';
+	send_time_sec     = ntohl(send_time_sec);
+	send_time_nanosec = ntohl(send_time_nanosec);
+	printf("rtt[%llu us]", ret - ((unsigned long long) send_time_sec * 1000000 + (unsigned long long) send_time_nanosec / 1000));
+	printf(" receivetime[%llu]", ret);
+	printf(" sendtime[%llu]", ((unsigned long long) send_time_sec * 1000000 + (unsigned long long) send_time_nanosec / 1000));
+	printf(" seq[%u]", ntohs(icmp->un.echo.sequence));
+	printf(" id[%d]",  icmp->un.echo.id);
 	printf(" src[%s]\n",
 		inet_ntoa(*((struct in_addr *)&((ip->saddr)))));
-
-//	printf("\nIPv%d: hdr-size=%d pkt-size=%d protocol=%d TTL=%d src=%s ",
-//		ip->version, ip->ihl*4, ntohs(ip->tot_len), ip->protocol,
-//		ip->ttl,
-//		inet_ntoa(*((struct in_addr *)&((ip->saddr)))));
-
-	// printf(" dst[%s]\n", inet_ntoa(*((struct in_addr *)&((ip->daddr)))));
-
-	// if (ntohs(icmp->un.echo.id) == pid) {
-	//	printf("ICMP: type[%d/%u] checksum[%u] id[%d] seq[%d]\n\n\n",
-	//		icmp->type, icmp->code, ntohs(icmp->checksum),
-	//		ntohs(icmp->un.echo.id), ntohs(icmp->un.echo.sequence));
-	// }
 }
 /* }}} */
 
@@ -62,15 +50,16 @@ void listener(int pid, struct protoent *proto) /* {{{ */
 	struct sockaddr_in addr;
 	unsigned char buf[1024];
 
-	if ((sd = socket(PF_INET, SOCK_RAW, proto->p_proto)) < 0 ) {
+	if ((sd = socket(PF_INET, SOCK_RAW|SOCK_NONBLOCK, proto->p_proto)) < 0 ) {
 		perror("socket");
 		exit(0);
 	}
-	fcntl(sd, F_SETFL, O_NONBLOCK);
+	// fcntl(sd, F_SETFL, O_NONBLOCK);
 	struct epoll_event ev, events[MAX_EVENTS];
 	int nfds, epollfd;
+	struct timespec t;
 
-	ev.events = EPOLLIN| EPOLLET; 
+	ev.events = EPOLLIN; // |EPOLLET;
 	if ((epollfd = epoll_create1(0)) == -1)
 		fprintf(stderr, "epoll_create1");
 	ev.data.fd = sd;
@@ -86,30 +75,30 @@ void listener(int pid, struct protoent *proto) /* {{{ */
 				unsigned int len = sizeof(addr);
 
 				memset(buf, 0, sizeof(buf));
-				bytes = recvfrom(sd, buf, sizeof(buf), 0, (struct sockaddr*) &addr, &len);
-				struct timespec t;
 				clock_gettime(CLOCK_REALTIME, &t);
 				unsigned long long ret = t.tv_sec * 1000000 + t.tv_nsec / 1000;
+				bytes = recvfrom(sd, buf, sizeof(buf), 0, (struct sockaddr*) &addr, &len);
 				if (bytes > 0)
-					display(buf, bytes, pid, ret);
+					display(buf, pid, ret);
 				else
 					perror("recvfrom");
 			}
+			printf(" %d", n);
 		}
+		printf("\n");
 	}
 	exit(0);
 }
 /* }}} */
 
-void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto) /* {{{ */
+void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto, unsigned short cnt) /* {{{ */
 {
 	const int ttl  = 61;
 	int sd;
-	unsigned int cnt = 0;
 	struct packet pckt;
 	struct sockaddr_in r_addr;
 
-	if ((sd = socket(PF_INET, SOCK_RAW, proto->p_proto)) < 0) {
+	if ((sd = socket(PF_INET, SOCK_RAW|SOCK_NONBLOCK, proto->p_proto)) < 0) {
 		perror("socket");
 		return;
 	}
@@ -119,10 +108,6 @@ void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto)
 		perror("Request nonblocking I/O");
 
 	unsigned int len = sizeof(r_addr);
-
-	//printf("Msg #%d\n", cnt);
-	//if (recvfrom(sd, &pckt, sizeof(pckt), 0, (struct sockaddr*)&r_addr, &len) < 0 )
-	//	perror("failed recieve");
 
 	memset(&pckt, 0, sizeof(pckt));
 	pckt.hdr.type = ICMP_ECHO;
@@ -140,7 +125,7 @@ void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto)
 	memcpy(pckt.msg + 4, &org_ns, 4);
 	memcpy(pckt.msg + 8, hst, 56);
 
-	pckt.hdr.un.echo.sequence = htons(cnt++);
+	pckt.hdr.un.echo.sequence = htons(cnt);
 	pckt.hdr.checksum = checksum(&pckt, sizeof(pckt));
 
 	if (sendto(sd, &pckt, sizeof(pckt), 0, (struct sockaddr*)addr, sizeof(*addr)) <= 0 )

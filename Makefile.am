@@ -29,35 +29,35 @@ AM_CFLAGS += -pedantic
 AM_CFLAGS += -std=gnu99
 AM_CFLAGS += $(DEPS_CFLAGS)
 
-core_headers :=
-#core_headers += src/config/config_file.h
-core_headers += src/util/logger.h
-core_headers += src/util/daemonize.h
-core_headers += src/pingd.h
+CORE_headers :=
+#CORE_headers += src/util/config_file.h
+CORE_headers += src/util/logger.h
+CORE_headers += src/util/daemonize.h
+CORE_headers += src/pingd.h
 
-core_src :=
-#core_src += src/config/parse.y
-#core_src += src/config/scanner.l
-core_src += src/util/logger.c
-core_src += src/util/daemonize.c
-core_src += src/pingd.c
+CORE_SRC :=
+#CORE_SRC += src/util/parse.y
+#CORE_SRC += src/util/scanner.l
+CORE_SRC += src/util/logger.c
+CORE_SRC += src/util/daemonize.c
+CORE_SRC += src/pingd.c
 
 AM_LFLAGS = --header-file --yylineno
 AM_YFLAGS = -d
 
-#src/scanner.c: src/config/scanner.l src/server.h src/config/config_file.h
+#src/util/scanner.c: src/util/scanner.l src/util/config_file.h
 #	$(LEXCOMPILE) --outfile=$@ $<
 
-#src/parse.c: src/config/parse.y src/server.h src/config/config_file.h
+#src/util/parse.c: src/util/parse.y src/util/config_file.h
 #	$(YACCCOMPILE) --output-file=$@ $<
 
-pingd_SOURCES = $(core_headers) src/main.c $(core_src)
+pingd_SOURCES = $(CORE_headers) src/main.c $(CORE_SRC)
 pingd_LDADD   = $(LDADD) -lrt
 sbin_PROGRAMS   = pingd
 
 dist_man_MANS  =
 
-EXTRA_DIST = Changelog README.md
+EXTRA_DIST = Changelog README.md README
 
 man/%.1: man/%.1.pod
 	./man/build $< @PACKAGE_VERSION@ > $@
