@@ -35,12 +35,13 @@ void display(void *buf, int pid, unsigned long long ret) /* {{{ */
 	send_time_sec     = ntohl(send_time_sec);
 	send_time_nanosec = ntohl(send_time_nanosec);
 	printf("rtt[%llu us]", ret - ((unsigned long long) send_time_sec * 1000000 + (unsigned long long) send_time_nanosec / 1000));
-	printf(" receivetime[%llu]", ret);
-	printf(" sendtime[%llu]", ((unsigned long long) send_time_sec * 1000000 + (unsigned long long) send_time_nanosec / 1000));
 	printf(" seq[%u]", ntohs(icmp->un.echo.sequence));
-	printf(" id[%d]",  icmp->un.echo.id);
-	printf(" src[%s]\n",
+	printf(" id[%d]",  ntohs(icmp->un.echo.id));
+	printf(" src[%s]",
 		inet_ntoa(*((struct in_addr *)&((ip->saddr)))));
+	if (ntohs(icmp->un.echo.id) != pid)
+		printf(" FAILED PING");
+	printf("\n");
 }
 /* }}} */
 
@@ -83,9 +84,7 @@ void listener(int pid, struct protoent *proto) /* {{{ */
 				else
 					perror("recvfrom");
 			}
-			printf(" %d", n);
 		}
-		printf("\n");
 	}
 	exit(0);
 }

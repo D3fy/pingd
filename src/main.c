@@ -66,11 +66,8 @@ int main (int argc, char *argv[])
 					fprintf(stderr, "failed to read timer, %s\n", strerror(errno));
 					exit(1);
 				}
-				for (int z = 1; z < argc; z++) {
-					printf("remote [ %s ] seq [ %u ]\n", argv[z], seq[z]);
+				for (int z = 1; z < argc; z++)
 					ping(argv[z], addr[z], pid, proto, seq[z]++);
-				}
-				//printf("\n");
 			}
 		}
 	}
