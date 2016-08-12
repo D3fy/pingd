@@ -19,4 +19,5 @@ src/.dirstamp
 src/util/*.o
 src/util/.deps/
 src/util/.dirstamp
+!src/util/config.h
 stamp-h1

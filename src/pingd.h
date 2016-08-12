@@ -22,10 +22,18 @@
 #include <netinet/in.h>
 #include <netinet/ip_icmp.h>
 
+// #include "util/linkedlist.h"
 
 #define MAX_EVENTS 1024
-#define PACKETSIZE 20
 
+struct _host
+{
+	int            timerfd;
+	unsigned int   seq;
+	char          *address;
+	char          *name;
+	// struct _llist *rtt;
+};
 
 struct packet
 {
@@ -35,11 +43,10 @@ struct packet
 
 unsigned short checksum(void *b, int len);
 
-// void display(void *buf, int bytes, int pid, unsigned long long ret);
 void display(void *buf, int pid, unsigned long long ret);
 
 void listener(int pid, struct protoent *proto);
 
-void ping(char * host, struct sockaddr_in *addr, int pid, struct protoent *proto, unsigned short seq, unsigned short hostid);
+void ping(struct sockaddr_in *addr, int pid, struct protoent *proto, unsigned short seq, unsigned short hostid);
 
 #endif

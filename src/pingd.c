@@ -39,7 +39,8 @@ void display(void *buf, int pid, unsigned long long ret) /* {{{ */
 	hostid = ntohs(hostid);
 
 	if (strcmp(name, "PINGD") != 0) {
-		printf("invalid icmp echo pkt[%s]\n", name);
+		printf(" invalid pingd pkt from src[%s]\n",
+			inet_ntoa(*((struct in_addr *)&((ip->saddr)))));
 		return;
 	}
 	send_time_sec     = ntohl(send_time_sec);
@@ -101,12 +102,11 @@ void listener(int pid, struct protoent *proto) /* {{{ */
 }
 /* }}} */
 
-void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto, unsigned short cnt, unsigned short hostid) /* {{{ */
+void ping(struct sockaddr_in *addr, int pid, struct protoent *proto, unsigned short cnt, unsigned short hostid) /* {{{ */
 {
 	const int ttl  = 61;
 	int sd;
 	struct packet pckt;
-	struct sockaddr_in r_addr;
 
 	if ((sd = socket(PF_INET, SOCK_RAW|SOCK_NONBLOCK, proto->p_proto)) < 0) {
 		perror("socket");
@@ -117,23 +117,20 @@ void ping(char *host, struct sockaddr_in *addr, int pid, struct protoent *proto,
 	if (fcntl(sd, F_SETFL, O_NONBLOCK) != 0 )
 		perror("Request nonblocking I/O");
 
-	unsigned int len = sizeof(r_addr);
-
 	memset(&pckt, 0, sizeof(pckt));
-	pckt.hdr.type = ICMP_ECHO;
+	pckt.hdr.type       = ICMP_ECHO;
 	pckt.hdr.un.echo.id = htons(pid);
 
 	struct timespec t;
 	clock_gettime(CLOCK_REALTIME, &t);
 	unsigned long org_s  = htonl(t.tv_sec);
 	unsigned long org_ns = htonl(t.tv_nsec);
-	const unsigned char ver       = 1;
+	const unsigned char ver = 1;
 	char *name = "PINGD";
 	unsigned char *header = malloc(5);
-	for (int i = 0; i < strlen(name); i++)
+	for (unsigned int i = 0; i < strlen(name); i++)
 		header[i] = name[i] + '0';
 
-	// unsigned short hostid = 0;
 	hostid = htons(hostid);
 	memcpy(pckt.msg,      header,  5);
 	memcpy(pckt.msg + 5,  &ver,    1);
