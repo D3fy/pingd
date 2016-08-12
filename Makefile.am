@@ -57,7 +57,7 @@ sbin_PROGRAMS   = pingd
 
 dist_man_MANS  =
 
-EXTRA_DIST = Changelog README.md README
+EXTRA_DIST = README COPYING
 
 man/%.1: man/%.1.pod
 	./man/build $< @PACKAGE_VERSION@ > $@
