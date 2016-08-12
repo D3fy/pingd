@@ -12,7 +12,12 @@ config.h.in~
 config.log
 config.status
 configure
+
 pingd
+pingd-*.tar.*
+pingd-*.zip
+pingd-*/
+
 src/*.o
 src/.deps/
 src/.dirstamp
