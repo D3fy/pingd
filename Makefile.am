@@ -30,14 +30,14 @@ AM_CFLAGS += -std=gnu99
 AM_CFLAGS += $(DEPS_CFLAGS)
 
 CORE_headers :=
-#CORE_headers += src/util/config_file.h
+CORE_headers += src/util/config.h
 CORE_headers += src/util/logger.h
 CORE_headers += src/util/daemonize.h
 CORE_headers += src/pingd.h
 
 CORE_SRC :=
-#CORE_SRC += src/util/parse.y
-#CORE_SRC += src/util/scanner.l
+CORE_SRC += src/util/parse.y
+CORE_SRC += src/util/scanner.l
 CORE_SRC += src/util/logger.c
 CORE_SRC += src/util/daemonize.c
 CORE_SRC += src/pingd.c
@@ -45,11 +45,11 @@ CORE_SRC += src/pingd.c
 AM_LFLAGS = --header-file --yylineno
 AM_YFLAGS = -d
 
-#src/util/scanner.c: src/util/scanner.l src/util/config_file.h
-#	$(LEXCOMPILE) --outfile=$@ $<
+src/util/scanner.c: src/util/scanner.l src/util/config.h
+	$(LEXCOMPILE) --outfile=$@ $<
 
-#src/util/parse.c: src/util/parse.y src/util/config_file.h
-#	$(YACCCOMPILE) --output-file=$@ $<
+src/util/parse.c: src/util/parse.y src/util/config.h
+	$(YACCCOMPILE) --output-file=$@ $<
 
 pingd_SOURCES = $(CORE_headers) src/main.c $(CORE_SRC)
 pingd_LDADD   = $(LDADD) -lrt

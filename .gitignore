@@ -24,5 +24,8 @@ src/.dirstamp
 src/util/*.o
 src/util/.deps/
 src/util/.dirstamp
+src/util/parse.c
+src/util/parse.h
+src/util/scanner.c
 !src/util/config.h
 stamp-h1

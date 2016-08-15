@@ -3,11 +3,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <errno.h>
+#include "config.h"
 
-#include "config_file.h"
-#include "../server.h"
-
-_conf *p_config;
+_CONFIG_T *config;
 
 int  yylex(void);
 void yyerror(char *str, ...);
@@ -28,18 +27,16 @@ int  yyparse();
 %token <i> INT;
 %token <string> STRING;
 %token <string> LOG_FACILITY;
-%token <string> LOG_TYPE;
 %token <string> LOG_LEVEL;
+%token <string> ADDRESS;
 
 %token PIDFILE;
 %token USER;
 %token GROUP;
-%token WORKERS;
 %token LOG;
+%token HOSTS;
 %token LOGLEVEL;
-%token LOGTYPE;
 %token FACILITY;
-%token PORT;
 
 %%
 
@@ -49,11 +46,9 @@ configuration:
 	;
 
 config:
-	  PIDFILE STRING { p_config->pid     = $2; }
-	| USER    STRING { p_config->uid     = $2; }
-	| GROUP   STRING { p_config->gid     = $2; }
-	| WORKERS INT    { p_config->workers = $2; }
-	| PORT    INT    { p_config->port    = $2; }
+	  PIDFILE STRING { config->pidfile = $2; }
+	| USER    STRING { config->user    = $2; }
+	| GROUP   STRING { config->group   = $2; }
 	;
 
 log_section:
@@ -61,9 +56,8 @@ log_section:
 	;
 
 log_statement:
-	  LOGLEVEL LOG_LEVEL    { p_config->log.level    = $2; }
-	| LOGTYPE  LOG_TYPE     { p_config->log.type     = $2; }
-	| FACILITY LOG_FACILITY { p_config->log.facility = $2; }
+	  LOGLEVEL LOG_LEVEL    { config->log.level    = $2; }
+	| FACILITY LOG_FACILITY { config->log.facility = $2; }
 	;
 
 optional_eol:
@@ -85,7 +79,7 @@ int yywrap()
 	return 1;
 }
 
-int parse_config_file(_conf *config_ref, const char *path)
+int parse_config_file(_CONFIG_T *config, const char *path)
 {
 	// parse the configuration file and store the results in the structure referenced
 	// error messages are output to stderr
@@ -94,19 +88,21 @@ int parse_config_file(_conf *config_ref, const char *path)
 	extern FILE *yyin;
 	extern int yylineno;
 
-	p_config = malloc(sizeof(_conf));
-	p_config = config_ref;
+	config = malloc(sizeof(_CONFIG_T));
+	memset(config, 0, sizeof(_CONFIG_T));
 
 	yyin = fopen (path, "r");
 	if (yyin == NULL) {
 		fprintf (stderr, "can't open configuration file %s: %s\n", path, strerror(errno));
-		return -1;
+		return 1;
 	}
 
 	yylineno = 1;
-	if (yyparse ()) {
-		fclose (yyin);
-		return -1;
-	} else
+	if (yyparse()) {
+		fclose(yyin);
+		return 1;
+	} else {
+		fclose(yyin);
 		return 0;
+	}
 }

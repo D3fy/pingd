@@ -1,8 +1,17 @@
-#ifndef _SHITTY_CONFIG
-#define _SHITTY_CONFIG
+#ifndef _PARSE_CONFIG
+#define _PARSE_CONFIG
 
-#include "../server.h"
+typedef struct {
+	char *user;
+	char *group;
+	char *pidfile;
+	struct {
+		char *facility;
+		char *level;
+	} log;
+} _CONFIG_T;
 
-int parse_config_file (_conf *config_ref, const char *path);
+
+int parse_config_file (_CONFIG_T *conf, const char *path);
 
 #endif

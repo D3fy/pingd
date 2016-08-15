@@ -20,8 +20,7 @@
 
 %{
 #include <signal.h>
-#include "../server.h"
-#include "config_file.h"
+#include "config.h"
 #include "parse.h"
 %}
 
@@ -36,6 +35,7 @@ LOG_FACILITY (?i:kern|user|mail|daemon|auth|syslog|lpr|news|uucp|clock|12|13|14|
 DECIMAL      ([0-9]+\.[0-9]+)
 INT          ([0-9]+)
 STRING       ([0-9A-Za-z_\/:\.]+)
+ADDRESS      (((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5]))
 
 %%
 
@@ -44,12 +44,10 @@ STRING       ([0-9A-Za-z_\/:\.]+)
 	pidfile  { return PIDFILE; }
 	user     { return USER; }
 	group    { return GROUP; }
-	workers  { return WORKERS; }
-	type     { return LOGTYPE; }
 	level    { return LOGLEVEL; }
 	facility { return FACILITY; }
-	port     { return PORT; }
 	log      { return LOG; }
+	hosts    { return HOSTS; }
 }
 
 <LIST>{
@@ -72,14 +70,14 @@ STRING       ([0-9A-Za-z_\/:\.]+)
 	              yylval.string = strdup(yytext);
 	              return LOG_LEVEL;
 	            }
-	{LOG_TYPE} {
-	             yylval.string = strdup(yytext);
-	             return LOG_TYPE;
-	           }
 	{LOG_FACILITY} {
 	                 yylval.string = strdup(yytext);
 	                 return LOG_FACILITY;
 	               }
+	{ADDRESS} {
+	            yylval.string = strdup(yytext);
+	            return ADDRESS;
+	          }
 	{DECIMAL} {
 	            yylval.d = atof(yytext);
 	            return DECIMAL;
