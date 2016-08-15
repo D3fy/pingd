@@ -36,6 +36,7 @@ CORE_headers += src/util/daemonize.h
 CORE_headers += src/pingd.h
 
 CORE_SRC :=
+CORE_SRC += src/util/config.c
 CORE_SRC += src/util/parse.y
 CORE_SRC += src/util/scanner.l
 CORE_SRC += src/util/logger.c

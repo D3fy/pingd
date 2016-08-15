@@ -18,8 +18,11 @@ typedef struct {
 	int hosts_len;
 } _CONFIG_T;
 
-// _CONFIG_T *config;
-
 int parse_config_file(_CONFIG_T *conf, const char *path);
+
+void add_host(_CONFIG_T *conf, char *name, char *address);
+_host pop_host(_CONFIG_T *conf);
+_host free_host(_CONFIG_T *conf, int idx);
+
 
 #endif
