@@ -64,15 +64,14 @@ void listener(int pid, struct protoent *proto) /* {{{ */
 	unsigned char buf[1024];
 
 	if ((sd = socket(PF_INET, SOCK_RAW|SOCK_NONBLOCK, proto->p_proto)) < 0 ) {
-		perror("socket");
-		exit(0);
+		logger(LOG_ERR, "failed to open listening socket: %s", strerror(errno));
+		exit(1);
 	}
-	// fcntl(sd, F_SETFL, O_NONBLOCK);
 	struct epoll_event ev, events[MAX_EVENTS];
 	int nfds, epollfd;
 	struct timespec t;
 
-	ev.events = EPOLLIN; // |EPOLLET;
+	ev.events = EPOLLIN;
 	if ((epollfd = epoll_create1(0)) == -1)
 		fprintf(stderr, "epoll_create1");
 	ev.data.fd = sd;

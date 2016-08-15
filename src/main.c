@@ -1,9 +1,12 @@
 #include "pingd.h"
+
 #include <time.h>
-#include "util/logger.h"
-#include "util/daemonize.h"
 #include <sys/timerfd.h>
 #include <getopt.h>
+
+#include "util/daemonize.h"
+#include "util/config.h"
+
 
 static struct
 {
@@ -58,6 +61,11 @@ int main (int argc, char *argv[])
 			return 1;
 		}
 	}
+
+	_CONFIG_T *conf = malloc(sizeof(_CONFIG_T));
+	memset(conf, 0, sizeof(_CONFIG_T));
+	if (parse_config_file(conf, OPTIONS.config) != 0)
+		return 1;
 
 	if (OPTIONS.daemonize) {
 		log_open("pingd", OPTIONS.facility);

@@ -18,7 +18,8 @@ typedef struct {
 	int hosts_len;
 } _CONFIG_T;
 
+// _CONFIG_T *config;
 
-int parse_config_file (_CONFIG_T *conf, const char *path);
+int parse_config_file(_CONFIG_T *conf, const char *path);
 
 #endif

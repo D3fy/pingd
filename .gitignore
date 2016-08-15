@@ -28,4 +28,7 @@ src/util/parse.c
 src/util/parse.h
 src/util/scanner.c
 !src/util/config.h
+
+t/parse/config
+!t/parse/config.c
 stamp-h1

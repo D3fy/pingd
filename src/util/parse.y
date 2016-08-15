@@ -46,9 +46,9 @@ configuration:
 	;
 
 config:
-	  PIDFILE STRING { config->pidfile = $2; }
-	| USER    STRING { config->user    = $2; }
-	| GROUP   STRING { config->group   = $2; }
+	  PIDFILE STRING { config->pidfile = strdup($2); }
+	| USER    STRING { config->user    = strdup($2); }
+	| GROUP   STRING { config->group   = strdup($2); }
 	;
 
 log_section:
@@ -56,8 +56,8 @@ log_section:
 	;
 
 log_statement:
-	  LOGLEVEL LOG_LEVEL    { config->log.level    = $2; }
-	| FACILITY LOG_FACILITY { config->log.facility = $2; }
+	  LOGLEVEL LOG_LEVEL    { config->log.level    = strdup($2); }
+	| FACILITY LOG_FACILITY { config->log.facility = strdup($2); }
 	;
 
 optional_eol:
@@ -79,7 +79,7 @@ int yywrap()
 	return 1;
 }
 
-int parse_config_file(_CONFIG_T *config, const char *path)
+int parse_config_file(_CONFIG_T *config_ref, const char *path)
 {
 	// parse the configuration file and store the results in the structure referenced
 	// error messages are output to stderr
@@ -90,6 +90,7 @@ int parse_config_file(_CONFIG_T *config, const char *path)
 
 	config = malloc(sizeof(_CONFIG_T));
 	memset(config, 0, sizeof(_CONFIG_T));
+	config = config_ref;
 
 	yyin = fopen (path, "r");
 	if (yyin == NULL) {
@@ -102,7 +103,7 @@ int parse_config_file(_CONFIG_T *config, const char *path)
 		fclose(yyin);
 		return 1;
 	} else {
-		fclose(yyin);
+		// fclose(yyin);
 		return 0;
 	}
 }

@@ -22,6 +22,8 @@
 #include <netinet/in.h>
 #include <netinet/ip_icmp.h>
 
+#include "util/logger.h"
+
 // #include "util/linkedlist.h"
 
 #define MAX_EVENTS 1024
