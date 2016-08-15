@@ -43,6 +43,7 @@ int  yyparse();
 configuration:
 	| configuration config
 	| configuration LOG optional_eol '{' log_section '}'
+	| configuration HOSTS optional_eol '{' hosts_section '}'
 	;
 
 config:
@@ -58,6 +59,25 @@ log_section:
 log_statement:
 	  LOGLEVEL LOG_LEVEL    { config->log.level    = strdup($2); }
 	| FACILITY LOG_FACILITY { config->log.facility = strdup($2); }
+	;
+
+hosts_section:
+	| hosts_section host_statement
+	;
+
+host_statement:
+	STRING ADDRESS {
+		               config->hosts[config->hosts_len] = malloc(sizeof(_host));
+		               config->hosts[config->hosts_len]->name    = strdup($1);
+		               config->hosts[config->hosts_len]->address = strdup($2);
+		               config->hosts_len++;
+		           }
+	| STRING       {
+		               config->hosts[config->hosts_len] = malloc(sizeof(_host));
+		               config->hosts[config->hosts_len]->name    = strdup($1);
+		               config->hosts[config->hosts_len]->address = strdup($1);
+		               config->hosts_len++;
+		           }
 	;
 
 optional_eol:
@@ -90,6 +110,7 @@ int parse_config_file(_CONFIG_T *config_ref, const char *path)
 
 	config = malloc(sizeof(_CONFIG_T));
 	memset(config, 0, sizeof(_CONFIG_T));
+	config->hosts = malloc(sizeof(_host *) * 10);
 	config = config_ref;
 
 	yyin = fopen (path, "r");

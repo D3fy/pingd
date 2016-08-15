@@ -4,7 +4,7 @@
 typedef struct {
 	char *name;
 	char *address;
-} host;
+} _host;
 
 typedef struct {
 	char *user;
@@ -14,7 +14,7 @@ typedef struct {
 		char *facility;
 		char *level;
 	} log;
-	host **hosts;
+	_host **hosts;
 	int hosts_len;
 } _CONFIG_T;
 
