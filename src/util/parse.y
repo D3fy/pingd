@@ -112,6 +112,7 @@ int parse_config_file(_CONFIG_T *config_ref, const char *path)
 	memset(config, 0, sizeof(_CONFIG_T));
 	config->hosts = malloc(sizeof(_host *) * 10);
 	config = config_ref;
+	config->hosts_len = 0;
 
 	yyin = fopen (path, "r");
 	if (yyin == NULL) {

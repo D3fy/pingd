@@ -64,6 +64,7 @@ int main (int argc, char *argv[])
 
 	_CONFIG_T *conf = malloc(sizeof(_CONFIG_T));
 	memset(conf, 0, sizeof(_CONFIG_T));
+	conf->hosts = malloc(sizeof(_host *));
 	if (parse_config_file(conf, OPTIONS.config) != 0)
 		return 1;
 
@@ -91,8 +92,8 @@ int main (int argc, char *argv[])
 	struct protoent *proto =  getprotobyname("ICMP");
 
 	// for (int i = 1; i < argc; i++) {
-	for (int i = 1; i < 2; i++) {
-		hname = gethostbyname("8.8.8.8");
+	for (int i = 0; i < conf->hosts_len; i++) {
+		hname = gethostbyname(conf->hosts[i]->address);
 		addr[i] = malloc(sizeof(struct sockaddr_in));
 		memset(addr[i], 0, sizeof(struct sockaddr_in));
 		addr[i]->sin_family = hname->h_addrtype;
@@ -108,7 +109,6 @@ int main (int argc, char *argv[])
 	int child_pid;
 	if ((child_pid = fork()) == 0)
 		listener(pid, proto);
-	// printf("parent[%d] child[%d]\n", pid, child_pid);
 	logger(LOG_INFO, "starting up");
 
 	struct itimerspec it;
@@ -136,8 +136,8 @@ int main (int argc, char *argv[])
 		logger(LOG_ERR, "epoll_ctl failed to add timerfd: %s", strerror(errno));
 		exit(1);
 	}
-	unsigned short seq[argc];
-	for (int i = 1; i < argc; i++)
+	unsigned short seq[conf->hosts_len];
+	for (int i = 0; i < conf->hosts_len; i++)
 		seq[i] = 0;
 
 	for (;;) {
@@ -154,7 +154,7 @@ int main (int argc, char *argv[])
 					logger(LOG_WARNING, "missed timmer interval");
 				if (value == 0)
 					logger(LOG_WARNING, "double timer read");
-				for (int z = 1; z < argc; z++)
+				for (int z = 0; z < conf->hosts_len; z++)
 					ping(addr[z], pid, proto, seq[z]++, (unsigned short) z);
 			}
 		}
