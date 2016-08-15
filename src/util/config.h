@@ -2,6 +2,11 @@
 #define _PARSE_CONFIG
 
 typedef struct {
+	char *name;
+	char *address;
+} host;
+
+typedef struct {
 	char *user;
 	char *group;
 	char *pidfile;
@@ -9,6 +14,8 @@ typedef struct {
 		char *facility;
 		char *level;
 	} log;
+	host **hosts;
+	int hosts_len;
 } _CONFIG_T;
 
 

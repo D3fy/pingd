@@ -82,8 +82,9 @@ int main (int argc, char *argv[])
 	int pid = getpid();
 	struct protoent *proto =  getprotobyname("ICMP");
 
-	for (int i = 1; i < argc; i++) {
-		hname = gethostbyname(argv[i]);
+	// for (int i = 1; i < argc; i++) {
+	for (int i = 1; i < 2; i++) {
+		hname = gethostbyname("8.8.8.8");
 		addr[i] = malloc(sizeof(struct sockaddr_in));
 		memset(addr[i], 0, sizeof(struct sockaddr_in));
 		addr[i]->sin_family = hname->h_addrtype;
@@ -99,7 +100,8 @@ int main (int argc, char *argv[])
 	int child_pid;
 	if ((child_pid = fork()) == 0)
 		listener(pid, proto);
-	printf("parent[%d] child[%d]\n", pid, child_pid);
+	// printf("parent[%d] child[%d]\n", pid, child_pid);
+	logger(LOG_INFO, "starting up");
 
 	struct itimerspec it;
 	it.it_interval.tv_sec  = 5;
@@ -122,15 +124,17 @@ int main (int argc, char *argv[])
 
 	ev.data.fd = fd;
 
-	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev) == -1)
-		fprintf(stderr, "epoll_ctl sfd");
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev) == -1) {
+		logger(LOG_ERR, "epoll_ctl failed to add timerfd: %s", strerror(errno));
+		exit(1);
+	}
 	unsigned short seq[argc];
 	for (int i = 1; i < argc; i++)
 		seq[i] = 0;
 
 	for (;;) {
 		if ((nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1)) == -1)
-			fprintf(stderr, "epoll_wait");
+			logger(LOG_WARNING, "epoll_wait error %s", strerror(errno));
 
 		for (int n = 0; n < nfds; ++n) {
 			if (events[n].data.fd == fd) {
