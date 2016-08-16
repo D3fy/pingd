@@ -3,13 +3,13 @@
 #include <time.h>
 #include <sys/timerfd.h>
 #include <getopt.h>
+#include <pthread.h>
 
 #include "util/daemonize.h"
 #include "util/config.h"
 
 
-static struct
-{
+static struct {
 	int   verbose;
 	char *facility;
 	int   daemonize;
@@ -18,6 +18,19 @@ static struct
 	char *user;
 	char *group;
 } OPTIONS = { 0 };
+
+typedef struct {
+	struct protoent *proto;
+	int    pid;
+} listen_d;
+
+void *listen_worker(void *data)
+{
+	listen_d *d = malloc(sizeof(listen_d));
+	d = (listen_d *)data;
+	listener(d->pid, d->proto);
+	return 0;
+}
 
 int main (int argc, char *argv[])
 {
@@ -67,10 +80,18 @@ int main (int argc, char *argv[])
 	conf->hosts = malloc(sizeof(_host *));
 	if (parse_config_file(conf, OPTIONS.config) != 0)
 		return 1;
+	if (conf->user)
+		OPTIONS.user    = conf->user;
+	if (conf->group)
+		OPTIONS.group   = conf->group;
+	if (conf->pidfile)
+		OPTIONS.pidfile = conf->pidfile;
+	if (conf->log.facility)
+		OPTIONS.facility = conf->log.facility;
 
 	if (OPTIONS.daemonize) {
 		log_open("pingd", OPTIONS.facility);
-		log_level(LOG_NOTICE + OPTIONS.verbose, NULL);
+		log_level(LOG_INFO, NULL);
 
 		mode_t um = umask(0);
 		if (daemonize(OPTIONS.pidfile, OPTIONS.user, OPTIONS.group) != 0) {
@@ -105,11 +126,18 @@ int main (int argc, char *argv[])
 	}
 
 
-	int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
-	int child_pid;
-	if ((child_pid = fork()) == 0)
-		listener(pid, proto);
 	logger(LOG_INFO, "starting up");
+	pthread_t listen_thread;
+	listen_d *data = malloc(sizeof(listen_d));
+	data->proto = proto;
+	data->pid   = pid;
+
+	if (pthread_create(&listen_thread, NULL, listen_worker, (void *) data) != 0) {
+		logger(LOG_ERR, "failed to create listener thread %s", strerror(errno));
+		exit(1);
+	}
+	pthread_setname_np(listen_thread, "listener");
+	int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
 
 	struct itimerspec it;
 	it.it_interval.tv_sec  = 5;

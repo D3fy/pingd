@@ -33,7 +33,7 @@ AC_PROG_YACC
 AC_PROG_LEX
 AC_PROG_INSTALL
 
-AC_HAVE_LIBRARY(pthread,,     AC_MSG_ERROR(Missing pthread library))
+AC_HAVE_LIBRARY(pthread,,AC_MSG_ERROR(Missing pthread library))
 
 AC_C_INLINE
 
